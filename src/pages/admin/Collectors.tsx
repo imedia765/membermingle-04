@@ -21,63 +21,44 @@ export default function Collectors() {
     queryFn: async () => {
       console.log('Starting collectors fetch process...');
       
-      // First, ensure collector_ids are up to date
-      await syncCollectorIds();
-      console.log('Collector IDs synced');
-
-      // Fetch collectors with their members, using both collector_id and collector name
+      // First, get all collectors
       const { data: collectorsData, error: collectorsError } = await supabase
         .from('collectors')
-        .select(`
-          *,
-          members!members_collector_id_fkey (
-            id,
-            full_name,
-            member_number,
-            email,
-            phone,
-            address,
-            town,
-            postcode,
-            status,
-            membership_type,
-            collector,
-            collector_id
-          )
-        `)
+        .select('*')
         .order('name');
-      
+
       if (collectorsError) {
         console.error('Error fetching collectors:', collectorsError);
         throw collectorsError;
       }
 
-      // For each collector, fetch additional members that might be linked by name but not ID
-      const enhancedCollectorsData = await Promise.all(
-        collectorsData.map(async (collector) => {
-          const { data: additionalMembers, error: membersError } = await supabase
-            .from('members')
-            .select('*')
-            .eq('collector', collector.name)
-            .is('collector_id', null);
+      // Then, get all members
+      const { data: membersData, error: membersError } = await supabase
+        .from('members')
+        .select('*')
+        .order('full_name');
 
-          if (membersError) {
-            console.error('Error fetching additional members:', membersError);
-            return collector;
-          }
+      if (membersError) {
+        console.error('Error fetching members:', membersError);
+        throw membersError;
+      }
 
-          // Combine existing members with additional members found by name
-          const allMembers = [
-            ...(collector.members || []),
-            ...(additionalMembers || [])
-          ];
+      console.log('Raw members data:', membersData);
 
-          return {
-            ...collector,
-            members: allMembers
-          };
-        })
-      );
+      // Map members to their collectors using the collector field
+      const enhancedCollectorsData = collectorsData.map(collector => {
+        // Find all members that belong to this collector using the collector field
+        const collectorMembers = membersData.filter(member => 
+          member.collector === collector.name
+        );
+
+        console.log(`Members for collector ${collector.name}:`, collectorMembers);
+
+        return {
+          ...collector,
+          members: collectorMembers
+        };
+      });
 
       console.log('Enhanced collectors data:', enhancedCollectorsData);
       return enhancedCollectorsData;

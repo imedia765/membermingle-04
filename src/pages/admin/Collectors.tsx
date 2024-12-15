@@ -43,16 +43,29 @@ export default function Collectors() {
         throw membersError;
       }
 
+      console.log('Raw collectors data:', collectorsData);
       console.log('Raw members data:', membersData);
 
       // Map members to their collectors using the collector field
       const enhancedCollectorsData = collectorsData.map(collector => {
-        // Find all members that belong to this collector using the collector field
-        const collectorMembers = membersData.filter(member => 
-          member.collector === collector.name
-        );
+        // Normalize collector names for comparison
+        const normalizeCollectorName = (name: string) => {
+          return name?.trim().toLowerCase().replace(/\s+/g, ' ') || '';
+        };
 
-        console.log(`Members for collector ${collector.name}:`, collectorMembers);
+        const collectorName = normalizeCollectorName(collector.name);
+        
+        // Find all members that belong to this collector using the collector field
+        const collectorMembers = membersData?.filter(member => {
+          const memberCollector = normalizeCollectorName(member.collector);
+          return memberCollector === collectorName;
+        }) || [];
+
+        console.log(`Members for collector ${collector.name}:`, {
+          collectorName,
+          memberCount: collectorMembers.length,
+          members: collectorMembers
+        });
 
         return {
           ...collector,

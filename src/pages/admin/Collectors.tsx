@@ -25,23 +25,7 @@ export default function Collectors() {
       await syncCollectorIds();
       console.log('Collector IDs synced');
 
-      // Debug: First get all members to check their collector assignments
-      const { data: allMembers, error: membersError } = await supabase
-        .from('members')
-        .select('id, full_name, collector, collector_id');
-      
-      if (membersError) {
-        console.error('Error fetching members:', membersError);
-      } else {
-        console.log('All members data:', allMembers);
-        // Log members without collector_id but with collector name
-        const unmatchedMembers = allMembers.filter(m => !m.collector_id && m.collector);
-        if (unmatchedMembers.length > 0) {
-          console.log('Members with collector name but no collector_id:', unmatchedMembers);
-        }
-      }
-
-      // Then fetch collectors with their members
+      // Fetch collectors with their members, using both collector_id and collector name
       const { data: collectorsData, error: collectorsError } = await supabase
         .from('collectors')
         .select(`
@@ -68,7 +52,35 @@ export default function Collectors() {
         throw collectorsError;
       }
 
-      return collectorsData;
+      // For each collector, fetch additional members that might be linked by name but not ID
+      const enhancedCollectorsData = await Promise.all(
+        collectorsData.map(async (collector) => {
+          const { data: additionalMembers, error: membersError } = await supabase
+            .from('members')
+            .select('*')
+            .eq('collector', collector.name)
+            .is('collector_id', null);
+
+          if (membersError) {
+            console.error('Error fetching additional members:', membersError);
+            return collector;
+          }
+
+          // Combine existing members with additional members found by name
+          const allMembers = [
+            ...(collector.members || []),
+            ...(additionalMembers || [])
+          ];
+
+          return {
+            ...collector,
+            members: allMembers
+          };
+        })
+      );
+
+      console.log('Enhanced collectors data:', enhancedCollectorsData);
+      return enhancedCollectorsData;
     }
   });
 

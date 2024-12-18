@@ -120,12 +120,12 @@ export function AdminLayout() {
   return (
     <div className="min-h-screen flex flex-col w-full bg-background">
       <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container py-2">
+        <div className="container">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="default"
-                className="w-[200px] justify-between h-12 hover:bg-primary/90 transition-colors"
+                className="w-full justify-between h-12 hover:bg-primary/90 transition-colors my-2"
               >
                 <span className="font-semibold">Menu</span>
                 <ChevronDown className="h-4 w-4 opacity-50" />

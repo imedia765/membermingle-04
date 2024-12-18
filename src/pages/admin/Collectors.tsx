@@ -2,10 +2,8 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { importDataFromJson } from "@/utils/importData";
 import { EditCollectorDialog } from "@/components/collectors/EditCollectorDialog";
 import { CollectorList } from "@/components/collectors/CollectorList";
-import { syncCollectorIds } from "@/utils/databaseOperations";
 import { CollectorHeader } from "@/components/collectors/CollectorHeader";
 import { CollectorSearch } from "@/components/collectors/CollectorSearch";
 import { PrintTemplate } from "@/components/collectors/PrintTemplate";
@@ -43,28 +41,24 @@ export default function Collectors() {
         throw membersError;
       }
 
-      console.log('Raw collectors data:', collectorsData);
-      console.log('Raw members data:', membersData);
+      // Helper function to normalize collector names for comparison
+      const normalizeCollectorName = (name: string) => {
+        if (!name) return '';
+        return name.toLowerCase()
+          .replace(/[\/&,.-]/g, '') // Remove special characters
+          .replace(/\s+/g, '')      // Remove all whitespace
+          .trim();
+      };
 
-      // Map members to their collectors using the collector field
+      // Map members to their collectors using normalized name matching
       const enhancedCollectorsData = collectorsData.map(collector => {
-        // Normalize collector names for comparison
-        const normalizeCollectorName = (name: string) => {
-          return name?.trim().toLowerCase().replace(/\s+/g, ' ') || '';
-        };
-
-        const collectorName = normalizeCollectorName(collector.name);
-        
-        // Find all members that belong to this collector using the collector field
-        const collectorMembers = membersData?.filter(member => {
-          const memberCollector = normalizeCollectorName(member.collector);
-          return memberCollector === collectorName;
-        }) || [];
-
-        console.log(`Members for collector ${collector.name}:`, {
-          collectorName,
-          memberCount: collectorMembers.length,
-          members: collectorMembers
+        const collectorMembers = membersData.filter(member => {
+          if (!member.collector) return false;
+          
+          const normalizedCollectorName = normalizeCollectorName(collector.name);
+          const normalizedMemberCollector = normalizeCollectorName(member.collector);
+          
+          return normalizedCollectorName === normalizedMemberCollector;
         });
 
         return {
@@ -73,27 +67,9 @@ export default function Collectors() {
         };
       });
 
-      console.log('Enhanced collectors data:', enhancedCollectorsData);
       return enhancedCollectorsData;
     }
   });
-
-  const handleImportData = async () => {
-    const result = await importDataFromJson();
-    if (result.success) {
-      toast({
-        title: "Data imported successfully",
-        description: "The collectors and members data has been imported.",
-      });
-      refetch();
-    } else {
-      toast({
-        title: "Import failed",
-        description: "There was an error importing the data.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handlePrintAll = () => {
     const printContent = PrintTemplate({ collectors });
@@ -108,8 +84,8 @@ export default function Collectors() {
   return (
     <div className="space-y-6">
       <CollectorHeader 
-        onImportData={handleImportData}
         onPrintAll={handlePrintAll}
+        onUpdate={refetch}
       />
 
       <CollectorSearch 

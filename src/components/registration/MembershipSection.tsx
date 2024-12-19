@@ -125,17 +125,25 @@ export const MembershipSection = ({ onCollectorChange }: MembershipSectionProps)
       
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="collector">Select Collector</Label>
+          <Label htmlFor="collector" className="text-lg">Select Collector</Label>
           {memberId && assignedCollectorName ? (
             <>
-              <div className="p-2 bg-muted rounded-md">
-                <p className="text-sm">Currently assigned to: <span className="font-medium">{assignedCollectorName}</span></p>
+              <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg shadow-sm">
+                <p className="text-lg">
+                  Currently assigned to: {" "}
+                  <span className="font-semibold text-blue-600 text-xl">
+                    {assignedCollectorName}
+                  </span>
+                </p>
               </div>
               {currentMemberNumber && (
-                <Alert className="mt-2">
-                  <InfoIcon className="h-4 w-4" />
-                  <AlertDescription>
-                    Your member number is: <span className="font-medium">{currentMemberNumber}</span>
+                <Alert className="mt-3 bg-blue-50 border-blue-200">
+                  <InfoIcon className="h-5 w-5 text-blue-500" />
+                  <AlertDescription className="text-lg">
+                    Your member number is: {" "}
+                    <span className="font-semibold text-blue-600 text-xl">
+                      {currentMemberNumber}
+                    </span>
                   </AlertDescription>
                 </Alert>
               )}
@@ -165,10 +173,13 @@ export const MembershipSection = ({ onCollectorChange }: MembershipSectionProps)
                 </SelectContent>
               </Select>
               {nextMemberNumber && (
-                <Alert className="mt-2">
-                  <InfoIcon className="h-4 w-4" />
-                  <AlertDescription>
-                    Your member number will be: <span className="font-medium">{nextMemberNumber}</span>
+                <Alert className="mt-3 bg-blue-50 border-blue-200">
+                  <InfoIcon className="h-5 w-5 text-blue-500" />
+                  <AlertDescription className="text-lg">
+                    Your member number will be: {" "}
+                    <span className="font-semibold text-blue-600 text-xl">
+                      {nextMemberNumber}
+                    </span>
                   </AlertDescription>
                 </Alert>
               )}
@@ -177,7 +188,7 @@ export const MembershipSection = ({ onCollectorChange }: MembershipSectionProps)
         </div>
 
         <div className="space-y-2">
-          <h4 className="font-medium">Membership Fee</h4>
+          <h4 className="font-medium text-lg">Membership Fee</h4>
           <p>Registration fee: £150</p>
           <p>Annual fee: £40 (collected £20 in January and £20 in June)</p>
         </div>

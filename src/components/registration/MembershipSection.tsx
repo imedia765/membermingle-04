@@ -21,6 +21,7 @@ export const MembershipSection = ({ onCollectorChange }: MembershipSectionProps)
   const memberId = location.state?.memberId;
 
   const calculateNextMemberNumber = async (collectorId: string) => {
+    console.log("Calculating next member number for collector:", collectorId);
     const { data: collector } = await supabase
       .from('collectors')
       .select('prefix, number')
@@ -28,6 +29,7 @@ export const MembershipSection = ({ onCollectorChange }: MembershipSectionProps)
       .single();
 
     if (collector) {
+      console.log("Found collector:", collector);
       const { data: lastMember } = await supabase
         .from('members')
         .select('member_number')
@@ -37,11 +39,13 @@ export const MembershipSection = ({ onCollectorChange }: MembershipSectionProps)
 
       let sequence = 1;
       if (lastMember && lastMember.length > 0) {
+        console.log("Last member number:", lastMember[0].member_number);
         const lastSequence = parseInt(lastMember[0].member_number.substring((collector.prefix + collector.number).length)) || 0;
         sequence = lastSequence + 1;
       }
 
       const nextNumber = `${collector.prefix}${collector.number}${String(sequence).padStart(3, '0')}`;
+      console.log("Calculated next member number:", nextNumber);
       setNextMemberNumber(nextNumber);
     }
   };
@@ -54,7 +58,7 @@ export const MembershipSection = ({ onCollectorChange }: MembershipSectionProps)
           console.log("Fetching member data for ID:", memberId);
           const { data: memberData, error: memberError } = await supabase
             .from('members')
-            .select('collector_id, collector')
+            .select('collector_id, collector, member_number')
             .eq('member_number', memberId)
             .single();
 

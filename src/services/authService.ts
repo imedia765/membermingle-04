@@ -37,7 +37,8 @@ export const signUpUser = async (email: string, password: string) => {
 export const createMember = async (memberData: any, collectorId: string) => {
   console.log("Creating member with data:", { memberData, collectorId });
   
-  const retryAttempts = 3;
+  const retryAttempts = 5; // Increased from 3 to 5
+  const baseDelay = 1000; // 1 second base delay
   let lastError;
 
   for (let attempt = 1; attempt <= retryAttempts; attempt++) {
@@ -60,6 +61,16 @@ export const createMember = async (memberData: any, collectorId: string) => {
         updated_at: new Date().toISOString()
       };
 
+      const { data: existingMembers } = await supabase
+        .from('members')
+        .select('id')
+        .eq('email', memberData.email)
+        .limit(1);
+
+      if (existingMembers && existingMembers.length > 0) {
+        throw new Error("A member with this email already exists.");
+      }
+
       const { data, error } = await supabase
         .from('members')
         .insert(memberObject)
@@ -70,9 +81,11 @@ export const createMember = async (memberData: any, collectorId: string) => {
         console.error(`Member creation error (attempt ${attempt}):`, error);
         
         if (error.code === '23505' && attempt < retryAttempts) {
-          // If it's a duplicate error and we haven't exceeded retry attempts,
-          // wait a short time and try again
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          // Exponential backoff with jitter for retries
+          const jitter = Math.random() * 1000; // Random delay between 0-1000ms
+          const delay = (baseDelay * Math.pow(2, attempt - 1)) + jitter;
+          console.log(`Retrying after ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
           lastError = error;
           continue;
         }
@@ -82,9 +95,13 @@ export const createMember = async (memberData: any, collectorId: string) => {
 
       console.log("Member created successfully:", data);
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error creating member (attempt ${attempt}):`, error);
       lastError = error;
+      
+      if (error.message === "A member with this email already exists.") {
+        throw error;
+      }
       
       if (attempt === retryAttempts) {
         throw new Error("Failed to create member after multiple attempts. Please try again.");

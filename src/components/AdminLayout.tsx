@@ -7,10 +7,11 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { Button } from "./ui/button";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "../integrations/supabase/client";
 import { useToast } from "./ui/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", to: "/admin" },
@@ -26,82 +27,118 @@ const menuItems = [
 export function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const refreshIntervalRef = useRef<NodeJS.Timeout>();
+  const lastActivityRef = useRef(Date.now());
+  const { isAuthenticated, userRole } = useAuth();
+
+  // Update last activity timestamp on any user interaction
+  useEffect(() => {
+    const updateLastActivity = () => {
+      lastActivityRef.current = Date.now();
+    };
+
+    window.addEventListener('mousemove', updateLastActivity);
+    window.addEventListener('keydown', updateLastActivity);
+    window.addEventListener('click', updateLastActivity);
+
+    return () => {
+      window.removeEventListener('mousemove', updateLastActivity);
+      window.removeEventListener('keydown', updateLastActivity);
+      window.removeEventListener('click', updateLastActivity);
+    };
+  }, []);
+
+  const checkSession = useCallback(async () => {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      
+      if (!session) {
+        console.log("No session found, redirecting to login");
+        navigate("/login");
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Session check error:', error);
+      toast({
+        title: "Authentication Error",
+        description: "Please try logging in again",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return false;
+    }
+  }, [navigate, toast]);
 
   useEffect(() => {
     let isActive = true;
-    let refreshInterval: NodeJS.Timeout;
 
-    const checkSession = async () => {
+    const initializeAuth = async () => {
       if (!isActive) return;
       
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
-        
-        if (!session && location.pathname !== '/login') {
-          navigate("/login");
-          return;
-        }
-        
-        setIsLoggedIn(!!session);
-      } catch (error) {
-        console.error('Session check error:', error);
-        toast({
-          title: "Authentication Error",
-          description: "Please try logging in again",
-          variant: "destructive",
-        });
-        navigate("/login");
-      } finally {
-        if (isActive) {
-          setLoading(false);
-        }
+      setLoading(true);
+      const hasSession = await checkSession();
+      if (isActive) {
+        setLoading(false);
       }
     };
 
-    // Initial session check
-    checkSession();
+    initializeAuth();
 
     // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!isActive) return;
       
-      setIsLoggedIn(!!session);
-      if (!session && location.pathname !== '/login') {
+      console.log("Auth state changed:", event);
+      
+      if (!session) {
+        console.log("No session in auth state change, redirecting to login");
         navigate("/login");
       }
     });
 
-    // Set up controlled query refresh interval
-    refreshInterval = setInterval(() => {
-      if (isLoggedIn) {
-        queryClient.invalidateQueries({ 
-          predicate: (query) => !query.queryKey.includes('static')
-        });
+    // Set up controlled query refresh interval with inactivity check
+    const setupQueryRefresh = () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
       }
-    }, 30000);
+
+      refreshIntervalRef.current = setInterval(() => {
+        const inactiveTime = Date.now() - lastActivityRef.current;
+        // Only refresh if user has been active in the last 5 minutes
+        if (inactiveTime < 5 * 60 * 1000) {
+          queryClient.invalidateQueries({ 
+            predicate: (query) => !query.queryKey.includes('static')
+          });
+        }
+      }, 30000);
+    };
+
+    if (isAuthenticated) {
+      setupQueryRefresh();
+    }
 
     // Cleanup function
     return () => {
       isActive = false;
       subscription.unsubscribe();
-      if (refreshInterval) {
-        clearInterval(refreshInterval);
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
       }
     };
-  }, [navigate, toast, queryClient, location.pathname, isLoggedIn]);
+  }, [navigate, queryClient, location.pathname, isAuthenticated, checkSession]);
 
-  const handleNavigation = (path: string) => {
+  const handleNavigation = useCallback((path: string) => {
     if (location.pathname !== path) {
-      // Prevent query invalidation during navigation
       queryClient.cancelQueries();
       navigate(path);
     }
-  };
+  }, [location.pathname, navigate, queryClient]);
 
   if (loading) {
     return (
@@ -113,7 +150,9 @@ export function AdminLayout() {
     );
   }
 
-  if (!isLoggedIn) {
+  if (!isAuthenticated) {
+    console.log("Not authenticated in render, redirecting to login");
+    navigate("/login");
     return null;
   }
 

@@ -4,24 +4,52 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
 import { useLocation } from "react-router-dom";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { InfoIcon } from "lucide-react";
 
 interface MembershipSectionProps {
   onCollectorChange?: (collectorId: string) => void;
 }
 
 export const MembershipSection = ({ onCollectorChange }: MembershipSectionProps) => {
-  const [collectors, setCollectors] = useState<Array<{ id: string; name: string }>>([]);
+  const [collectors, setCollectors] = useState<Array<{ id: string; name: string; prefix: string; number: string }>>([]);
   const [selectedCollector, setSelectedCollector] = useState<string>("");
   const [assignedCollectorName, setAssignedCollectorName] = useState<string>("");
+  const [nextMemberNumber, setNextMemberNumber] = useState<string>("");
   const location = useLocation();
   const prefilledData = location.state?.prefilledData;
   const memberId = location.state?.memberId;
+
+  const calculateNextMemberNumber = async (collectorId: string) => {
+    const { data: collector } = await supabase
+      .from('collectors')
+      .select('prefix, number')
+      .eq('id', collectorId)
+      .single();
+
+    if (collector) {
+      const { data: lastMember } = await supabase
+        .from('members')
+        .select('member_number')
+        .like('member_number', `${collector.prefix}${collector.number}%`)
+        .order('member_number', { ascending: false })
+        .limit(1);
+
+      let sequence = 1;
+      if (lastMember && lastMember.length > 0) {
+        const lastSequence = parseInt(lastMember[0].member_number.substring((collector.prefix + collector.number).length)) || 0;
+        sequence = lastSequence + 1;
+      }
+
+      const nextNumber = `${collector.prefix}${collector.number}${String(sequence).padStart(3, '0')}`;
+      setNextMemberNumber(nextNumber);
+    }
+  };
 
   useEffect(() => {
     const fetchCollectors = async () => {
       console.log("Fetching collectors...");
       try {
-        // First check if we have a member ID and get their collector
         if (memberId) {
           console.log("Fetching member data for ID:", memberId);
           const { data: memberData, error: memberError } = await supabase
@@ -40,16 +68,14 @@ export const MembershipSection = ({ onCollectorChange }: MembershipSectionProps)
                 setSelectedCollector(memberData.collector_id);
                 onCollectorChange?.(memberData.collector_id);
               }
-              // Early return since we have the collector info
               return;
             }
           }
         }
 
-        // Only fetch active collectors if we don't have an assigned collector
         const { data: collectorsData, error: collectorsError } = await supabase
           .from('collectors')
-          .select('id, name')
+          .select('id, name, prefix, number')
           .eq('active', true)
           .order('name');
 
@@ -67,6 +93,7 @@ export const MembershipSection = ({ onCollectorChange }: MembershipSectionProps)
             console.log("Setting default collector:", collectorsData[0].id);
             setSelectedCollector(collectorsData[0].id);
             onCollectorChange?.(collectorsData[0].id);
+            calculateNextMemberNumber(collectorsData[0].id);
           }
         } else {
           console.warn("No active collectors found in the database");
@@ -83,6 +110,7 @@ export const MembershipSection = ({ onCollectorChange }: MembershipSectionProps)
     console.log("Selected collector:", value);
     setSelectedCollector(value);
     onCollectorChange?.(value);
+    calculateNextMemberNumber(value);
   };
 
   return (
@@ -97,28 +125,38 @@ export const MembershipSection = ({ onCollectorChange }: MembershipSectionProps)
               <p className="text-sm">Currently assigned to: <span className="font-medium">{assignedCollectorName}</span></p>
             </div>
           ) : (
-            <Select 
-              value={selectedCollector} 
-              onValueChange={handleCollectorChange}
-              disabled={!!memberId}
-            >
-              <SelectTrigger id="collector" className="w-full">
-                <SelectValue placeholder="Select a collector" />
-              </SelectTrigger>
-              <SelectContent>
-                {collectors.length === 0 ? (
-                  <SelectItem value="no-collectors" disabled>
-                    No active collectors available
-                  </SelectItem>
-                ) : (
-                  collectors.map((collector) => (
-                    <SelectItem key={collector.id} value={collector.id}>
-                      {collector.name}
+            <>
+              <Select 
+                value={selectedCollector} 
+                onValueChange={handleCollectorChange}
+                disabled={!!memberId}
+              >
+                <SelectTrigger id="collector" className="w-full">
+                  <SelectValue placeholder="Select a collector" />
+                </SelectTrigger>
+                <SelectContent>
+                  {collectors.length === 0 ? (
+                    <SelectItem value="no-collectors" disabled>
+                      No active collectors available
                     </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
+                  ) : (
+                    collectors.map((collector) => (
+                      <SelectItem key={collector.id} value={collector.id}>
+                        {collector.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              {nextMemberNumber && (
+                <Alert className="mt-2">
+                  <InfoIcon className="h-4 w-4" />
+                  <AlertDescription>
+                    Your member number will be: <span className="font-medium">{nextMemberNumber}</span>
+                  </AlertDescription>
+                </Alert>
+              )}
+            </>
           )}
         </div>
 

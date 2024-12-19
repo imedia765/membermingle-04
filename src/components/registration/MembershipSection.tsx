@@ -16,6 +16,7 @@ export const MembershipSection = ({ onCollectorChange }: MembershipSectionProps)
   const [selectedCollector, setSelectedCollector] = useState<string>("");
   const [assignedCollectorName, setAssignedCollectorName] = useState<string>("");
   const [nextMemberNumber, setNextMemberNumber] = useState<string>("");
+  const [currentMemberNumber, setCurrentMemberNumber] = useState<string>("");
   const location = useLocation();
   const prefilledData = location.state?.prefilledData;
   const memberId = location.state?.memberId;
@@ -66,6 +67,7 @@ export const MembershipSection = ({ onCollectorChange }: MembershipSectionProps)
             console.error("Error fetching member data:", memberError);
           } else if (memberData) {
             console.log("Found member data:", memberData);
+            setCurrentMemberNumber(memberData.member_number);
             if (memberData.collector) {
               setAssignedCollectorName(memberData.collector);
               if (memberData.collector_id) {
@@ -125,9 +127,19 @@ export const MembershipSection = ({ onCollectorChange }: MembershipSectionProps)
         <div className="space-y-2">
           <Label htmlFor="collector">Select Collector</Label>
           {memberId && assignedCollectorName ? (
-            <div className="p-2 bg-muted rounded-md">
-              <p className="text-sm">Currently assigned to: <span className="font-medium">{assignedCollectorName}</span></p>
-            </div>
+            <>
+              <div className="p-2 bg-muted rounded-md">
+                <p className="text-sm">Currently assigned to: <span className="font-medium">{assignedCollectorName}</span></p>
+              </div>
+              {currentMemberNumber && (
+                <Alert className="mt-2">
+                  <InfoIcon className="h-4 w-4" />
+                  <AlertDescription>
+                    Your member number is: <span className="font-medium">{currentMemberNumber}</span>
+                  </AlertDescription>
+                </Alert>
+              )}
+            </>
           ) : (
             <>
               <Select 

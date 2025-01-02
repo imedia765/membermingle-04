@@ -21,7 +21,7 @@ export const MembersList = () => {
   const [selectedMember, setSelectedMember] = useState<any>(null);
   const { toast } = useToast();
 
-  const { data: members, isLoading, error } = useQuery({
+  const { data: members, isLoading, error, refetch } = useQuery({
     queryKey: ["members"],
     queryFn: async () => {
       const { data, error } = await supabase

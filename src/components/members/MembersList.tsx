@@ -21,7 +21,7 @@ export const MembersList = () => {
   const [selectedMember, setSelectedMember] = useState<any>(null);
   const { toast } = useToast();
 
-  const { data: members, refetch } = useQuery({
+  const { data: members, isLoading, error } = useQuery({
     queryKey: ["members"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -29,7 +29,10 @@ export const MembersList = () => {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching members:", error);
+        throw error;
+      }
       return data;
     },
   });
@@ -53,6 +56,18 @@ export const MembersList = () => {
     refetch();
   };
 
+  if (isLoading) {
+    return <div className="text-center py-4">Loading members...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-4 text-red-500">
+        Error loading members. Please try again later.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -71,6 +86,7 @@ export const MembersList = () => {
               <TableHead className="text-gray-300">Full Name</TableHead>
               <TableHead className="text-gray-300">Email</TableHead>
               <TableHead className="text-gray-300">Phone</TableHead>
+              <TableHead className="text-gray-300">Collector</TableHead>
               <TableHead className="text-gray-300">Status</TableHead>
               <TableHead className="text-gray-300">Actions</TableHead>
             </TableRow>
@@ -82,6 +98,7 @@ export const MembersList = () => {
                 <TableCell>{member.full_name}</TableCell>
                 <TableCell>{member.email}</TableCell>
                 <TableCell>{member.phone}</TableCell>
+                <TableCell>{member.collector || 'N/A'}</TableCell>
                 <TableCell>
                   <span className={`px-2 py-1 rounded-full text-xs ${
                     member.status === 'active' 

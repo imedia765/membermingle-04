@@ -1,5 +1,6 @@
 import React from "react";
 import { Button } from "./ui/button";
+import { Link } from "react-router-dom";
 
 export const Hero = () => {
   return (
@@ -13,9 +14,18 @@ export const Hero = () => {
           <p className="text-gray-300 text-lg md:text-xl max-w-2xl mx-auto">
             Welcome to our community platform. Stay updated with the latest news and information.
           </p>
-          <Button variant="default" className="bg-gradient-to-r from-[#4a9eed] to-[#3a8edd] hover:from-[#3a8edd] hover:to-[#2a7ecd] text-white font-semibold px-8 py-3">
-            Login
-          </Button>
+          <div className="flex justify-center gap-4">
+            <Button variant="default" className="bg-gradient-to-r from-[#4a9eed] to-[#3a8edd] hover:from-[#3a8edd] hover:to-[#2a7ecd] text-white font-semibold px-8 py-3">
+              Login
+            </Button>
+            <Button
+              variant="outline"
+              className="text-white border-white hover:bg-white/10"
+              asChild
+            >
+              <Link to="/dashboard">Dashboard</Link>
+            </Button>
+          </div>
         </div>
       </div>
     </div>

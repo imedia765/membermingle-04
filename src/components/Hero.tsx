@@ -1,6 +1,7 @@
 import React from "react";
 import { Button } from "./ui/button";
 import { Link } from "react-router-dom";
+import { LoginForm } from "./auth/LoginForm";
 
 export const Hero = () => {
   return (
@@ -12,18 +13,16 @@ export const Hero = () => {
             Pakistan Welfare Association
           </h1>
           <p className="text-gray-300 text-lg md:text-xl max-w-2xl mx-auto">
-            Welcome to our community platform. Stay updated with the latest news and information.
+            Welcome to our community platform. Please login with your member number.
           </p>
-          <div className="flex justify-center gap-4">
-            <Button variant="default" className="bg-gradient-to-r from-[#4a9eed] to-[#3a8edd] hover:from-[#3a8edd] hover:to-[#2a7ecd] text-white font-semibold px-8 py-3">
-              Login
-            </Button>
+          <div className="flex flex-col items-center justify-center space-y-6">
+            <LoginForm />
             <Button
               variant="outline"
               className="text-white border-white hover:bg-white/10"
               asChild
             >
-              <Link to="/dashboard">Dashboard</Link>
+              <Link to="/dashboard">View Dashboard</Link>
             </Button>
           </div>
         </div>

@@ -18,23 +18,58 @@ export const LoginForm = () => {
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.rpc('authenticate_member', {
+      // First verify member credentials using RPC
+      const { data: memberData, error: rpcError } = await supabase.rpc('authenticate_member', {
         p_member_number: memberNumber,
         p_password: password
       });
 
-      if (error) throw error;
-      if (!data || data.length === 0) {
+      if (rpcError) throw rpcError;
+      if (!memberData || memberData.length === 0) {
         throw new Error('Invalid credentials');
       }
 
-      // Create auth session
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: `${memberNumber}@temp.com`,
-        password: memberNumber, // Using member number as password
+      const email = `${memberNumber}@temp.com`;
+
+      // Try to sign in first
+      let { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password: memberNumber,
       });
 
-      if (signInError) throw signInError;
+      // If sign in fails, create the user first
+      if (signInError) {
+        // Create auth user
+        const { error: signUpError } = await supabase.auth.signUp({
+          email,
+          password: memberNumber,
+          options: {
+            data: {
+              member_number: memberNumber,
+              role: memberData[0].role,
+            }
+          }
+        });
+
+        if (signUpError) throw signUpError;
+
+        // Try signing in again after creation
+        const { error: finalSignInError } = await supabase.auth.signInWithPassword({
+          email,
+          password: memberNumber,
+        });
+
+        if (finalSignInError) throw finalSignInError;
+      }
+
+      // Update the member's auth_user_id if needed
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData?.user) {
+        await supabase
+          .from('members')
+          .update({ auth_user_id: authData.user.id })
+          .eq('member_number', memberNumber);
+      }
 
       toast({
         title: "Success",
@@ -48,6 +83,7 @@ export const LoginForm = () => {
         description: error.message || "Failed to login",
         variant: "destructive",
       });
+      console.error("Login error:", error);
     } finally {
       setIsLoading(false);
     }

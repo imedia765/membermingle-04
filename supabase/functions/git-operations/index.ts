@@ -128,32 +128,57 @@ serve(async (req) => {
         branch: sourceRepoInfo.default_branch,
       });
 
-      console.log('Source branch data:', {
-        name: sourceBranch.name,
-        commitSha: sourceBranch.commit.sha
-      });
-
-      // Get target repository default branch
+      // Get target repository default branch and verify it exists
       const { data: targetRepoInfo } = await octokit.rest.repos.get({
         owner: targetOwner,
         repo: targetRepoName
       });
 
-      console.log('Target repo info:', {
-        defaultBranch: targetRepoInfo.default_branch
-      });
-
+      // Verify the target branch exists
       try {
-        // Create merge using GitHub's API
-        const mergeResult = await octokit.rest.repos.merge({
+        await octokit.rest.repos.getBranch({
           owner: targetOwner,
           repo: targetRepoName,
-          base: targetRepoInfo.default_branch,
-          head: sourceBranch.commit.sha,
-          commit_message: `Merge from ${sourceRepo.nickname || sourceRepo.url} using ${pushType} strategy`
+          branch: targetRepoInfo.default_branch,
         });
+      } catch (error) {
+        if (error.status === 404) {
+          // If branch doesn't exist, create it with the initial commit
+          await octokit.rest.git.createRef({
+            owner: targetOwner,
+            repo: targetRepoName,
+            ref: `refs/heads/${targetRepoInfo.default_branch}`,
+            sha: sourceBranch.commit.sha
+          });
+        } else {
+          throw error;
+        }
+      }
 
-        console.log('Merge successful:', mergeResult.data);
+      try {
+        let mergeResult;
+        
+        if (pushType === 'force') {
+          // For force push, update the reference directly
+          mergeResult = await octokit.rest.git.updateRef({
+            owner: targetOwner,
+            repo: targetRepoName,
+            ref: `heads/${targetRepoInfo.default_branch}`,
+            sha: sourceBranch.commit.sha,
+            force: true
+          });
+        } else {
+          // For regular push, use merge API
+          mergeResult = await octokit.rest.repos.merge({
+            owner: targetOwner,
+            repo: targetRepoName,
+            base: targetRepoInfo.default_branch,
+            head: sourceBranch.commit.sha,
+            commit_message: `Merge from ${sourceRepo.nickname || sourceRepo.url} using ${pushType} strategy`
+          });
+        }
+
+        console.log('Operation successful:', mergeResult.data);
 
         // Update both repositories' status
         const timestamp = new Date().toISOString();
@@ -177,7 +202,7 @@ serve(async (req) => {
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       } catch (error) {
-        console.error('Error during merge operation:', error);
+        console.error('Error during merge/push operation:', error);
         return new Response(
           JSON.stringify({ 
             success: false, 

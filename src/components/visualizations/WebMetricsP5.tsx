@@ -7,6 +7,12 @@ interface WebMetricsP5Props {
   data: Array<{ metric: string; value: string }>;
 }
 
+interface ColorTuple {
+  r: number;
+  g: number;
+  b: number;
+}
+
 export const WebMetricsP5 = ({ data }: WebMetricsP5Props) => {
   const circles: Array<{
     angle: number;
@@ -23,11 +29,11 @@ export const WebMetricsP5 = ({ data }: WebMetricsP5Props) => {
     accessibility: ['Image Alt Tags', 'ARIA Labels']
   };
 
-  const categoryColors = {
-    performance: [252, 82, 74],
-    seo: [56, 189, 248],
-    security: [34, 197, 94],
-    accessibility: [168, 85, 247]
+  const categoryColors: Record<string, ColorTuple> = {
+    performance: { r: 252, g: 82, b: 74 },
+    seo: { r: 56, g: 189, b: 248 },
+    security: { r: 34, g: 197, b: 94 },
+    accessibility: { r: 168, g: 85, b: 247 }
   };
 
   const setup = (p5: p5Types, canvasParentRef: Element) => {
@@ -78,16 +84,16 @@ export const WebMetricsP5 = ({ data }: WebMetricsP5Props) => {
       
       // Draw outer glow for present/yes values
       if (circle.value === 'Present' || circle.value === 'Yes') {
-        let color = categoryColors[circle.category as keyof typeof categoryColors] || [150, 150, 150];
+        const color = categoryColors[circle.category] || { r: 150, g: 150, b: 150 };
         p5.noStroke();
-        p5.fill(...color, 50);
+        p5.fill(color.r, color.g, color.b, 50);
         p5.circle(x, y, 40 + pulseSize);
       }
 
       // Draw main circle
       p5.noStroke();
-      let color = categoryColors[circle.category as keyof typeof categoryColors] || [150, 150, 150];
-      p5.fill(...color, 200);
+      const color = categoryColors[circle.category] || { r: 150, g: 150, b: 150 };
+      p5.fill(color.r, color.g, color.b, 200);
       p5.circle(x, y, 30);
 
       // Draw label

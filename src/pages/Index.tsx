@@ -11,7 +11,7 @@ const Index = () => {
           <div className="container mx-auto">
             <div className="flex justify-between items-center mb-8">
               <h1 className="text-3xl font-bold">Git Tools Dashboard</h1>
-              <SidebarTrigger />
+              <SidebarTrigger className="md:hidden" />
             </div>
             <RepoManager />
           </div>

@@ -9,141 +9,45 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      members: {
+      repositories: {
         Row: {
-          address: string | null
-          admin_note: string | null
-          auth_user_id: string | null
-          collector: string | null
-          collector_id: string | null
-          cors_enabled: boolean | null
-          created_at: string
-          created_by: string | null
-          date_of_birth: string | null
-          default_password_hash: string | null
-          email: string | null
-          email_verified: boolean | null
-          family_member_dob: string | null
-          family_member_gender: string | null
-          family_member_name: string | null
-          family_member_relationship: string | null
-          first_time_login: boolean | null
-          full_name: string
-          gender: string | null
+          created_at: string | null
           id: string
-          marital_status: string | null
-          member_number: string
-          membership_type: string | null
-          password_changed: boolean | null
-          payment_amount: number | null
-          payment_date: string | null
-          payment_notes: string | null
-          payment_type: string | null
-          phone: string | null
-          postcode: string | null
-          profile_completed: boolean | null
-          profile_updated: boolean | null
-          registration_completed: boolean | null
-          registration_status: string | null
-          role: Database["public"]["Enums"]["user_role"]
+          is_master: boolean | null
+          last_commit: string | null
+          last_commit_date: string | null
+          last_sync: string | null
+          name: string
+          nickname: string | null
           status: string | null
-          ticket_description: string | null
-          ticket_priority: string | null
-          ticket_status: string | null
-          ticket_subject: string | null
-          town: string | null
-          updated_at: string
-          verified: boolean | null
+          updated_at: string | null
+          url: string
         }
         Insert: {
-          address?: string | null
-          admin_note?: string | null
-          auth_user_id?: string | null
-          collector?: string | null
-          collector_id?: string | null
-          cors_enabled?: boolean | null
-          created_at?: string
-          created_by?: string | null
-          date_of_birth?: string | null
-          default_password_hash?: string | null
-          email?: string | null
-          email_verified?: boolean | null
-          family_member_dob?: string | null
-          family_member_gender?: string | null
-          family_member_name?: string | null
-          family_member_relationship?: string | null
-          first_time_login?: boolean | null
-          full_name: string
-          gender?: string | null
+          created_at?: string | null
           id?: string
-          marital_status?: string | null
-          member_number: string
-          membership_type?: string | null
-          password_changed?: boolean | null
-          payment_amount?: number | null
-          payment_date?: string | null
-          payment_notes?: string | null
-          payment_type?: string | null
-          phone?: string | null
-          postcode?: string | null
-          profile_completed?: boolean | null
-          profile_updated?: boolean | null
-          registration_completed?: boolean | null
-          registration_status?: string | null
-          role?: Database["public"]["Enums"]["user_role"]
+          is_master?: boolean | null
+          last_commit?: string | null
+          last_commit_date?: string | null
+          last_sync?: string | null
+          name: string
+          nickname?: string | null
           status?: string | null
-          ticket_description?: string | null
-          ticket_priority?: string | null
-          ticket_status?: string | null
-          ticket_subject?: string | null
-          town?: string | null
-          updated_at?: string
-          verified?: boolean | null
+          updated_at?: string | null
+          url: string
         }
         Update: {
-          address?: string | null
-          admin_note?: string | null
-          auth_user_id?: string | null
-          collector?: string | null
-          collector_id?: string | null
-          cors_enabled?: boolean | null
-          created_at?: string
-          created_by?: string | null
-          date_of_birth?: string | null
-          default_password_hash?: string | null
-          email?: string | null
-          email_verified?: boolean | null
-          family_member_dob?: string | null
-          family_member_gender?: string | null
-          family_member_name?: string | null
-          family_member_relationship?: string | null
-          first_time_login?: boolean | null
-          full_name?: string
-          gender?: string | null
+          created_at?: string | null
           id?: string
-          marital_status?: string | null
-          member_number?: string
-          membership_type?: string | null
-          password_changed?: boolean | null
-          payment_amount?: number | null
-          payment_date?: string | null
-          payment_notes?: string | null
-          payment_type?: string | null
-          phone?: string | null
-          postcode?: string | null
-          profile_completed?: boolean | null
-          profile_updated?: boolean | null
-          registration_completed?: boolean | null
-          registration_status?: string | null
-          role?: Database["public"]["Enums"]["user_role"]
+          is_master?: boolean | null
+          last_commit?: string | null
+          last_commit_date?: string | null
+          last_sync?: string | null
+          name?: string
+          nickname?: string | null
           status?: string | null
-          ticket_description?: string | null
-          ticket_priority?: string | null
-          ticket_status?: string | null
-          ticket_subject?: string | null
-          town?: string | null
-          updated_at?: string
-          verified?: boolean | null
+          updated_at?: string | null
+          url?: string
         }
         Relationships: []
       }
@@ -152,36 +56,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      authenticate_member:
-        | {
-            Args: {
-              p_member_number: string
-            }
-            Returns: {
-              id: string
-              member_number: string
-              auth_user_id: string
-              full_name: string
-              email: string
-              role: string
-            }[]
-          }
-        | {
-            Args: {
-              p_member_number: string
-              p_password: string
-            }
-            Returns: {
-              id: string
-              member_number: string
-              full_name: string
-              email: string
-              role: Database["public"]["Enums"]["user_role"]
-            }[]
-          }
+      [_ in never]: never
     }
     Enums: {
-      user_role: "member" | "collector" | "admin"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
